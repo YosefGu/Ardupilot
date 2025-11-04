@@ -1,9 +1,9 @@
 from pymavlink import mavutil
 import math
 import time
-from parser import Parser
-from multy_proccessing import ParserMultiprocessing
-from thread_parser import ParserThreadPool
+from business_logic.parser_sync import ParserSync
+from business_logic.multy_proccessing import ParserMultiprocessing
+from business_logic.thread_parser import ParserThreadPool
 
 class Test:
 
@@ -28,7 +28,7 @@ class Test:
 
     def verify_count_messages(self, msg_type=None):
         start_time = time.time()
-        parsor = Parser(self.path)
+        parsor = ParserSync(self.path)
         parsor_gen = parsor.recv_match(msg_type)
         count_parsor = 0
         count_mav = 0
@@ -50,7 +50,7 @@ class Test:
     def verify_message_consistency(self, msg_type=None):
         start_time = time.time()
         all_match = True
-        parsor = Parser(self.path)
+        parsor = ParserSync(self.path)
         parsor_gen = parsor.recv_match(msg_type)
         counter = 0
         while True:
@@ -72,7 +72,7 @@ class Test:
 
     def parsor_runtime(self, msg_type=None):
         start_time = time.time()
-        parsor = Parser(self.path)
+        parsor = ParserSync(self.path)
         parsor_gen = parsor.recv_match(msg_type)
         for msg in parsor_gen:
             pass
@@ -105,14 +105,6 @@ class Test:
         print(f"Threading runtime:{end_time - start_time:.3f}")
         
 
-if __name__ == "__main__":
-    test_class = Test()
-    # test_class.verify_count_messages()
-    test_class.verify_message_consistency('GPS')
-    # test_class.mavlink_runtime()
-    # test_class.parsor_runtime()
-    # test_class.multiprocessing_runtime()
-    # test_class.threads_runtime()
 
 
 

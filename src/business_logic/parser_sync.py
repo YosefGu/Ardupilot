@@ -4,24 +4,14 @@ import struct
 import mmap
 from typing import Dict, List, Iterator, Any
 
-
-# ----------------------------------------------------------------------
-# Constants
-# ----------------------------------------------------------------------
-START_SYNC_MARKER = b'\xA3\x95'
-FMT_MSG_TYPE = 128
-FMT_LENGTH = 89
-
-AP_TO_STRUCT = {
-    'a': '32h', 'b': 'b', 'B': 'B', 'h': 'h', 'H': 'H',
-    'i': 'i', 'I': 'I', 'f': 'f', 'd': 'd',
-    'n': '4s', 'N': '16s', 'Z': '64s',
-    'c': 'h', 'C': 'H', 'e': 'i', 'E': 'I',
-    'L': 'i', 'M': 'B', 'q': 'q', 'Q': 'Q',
-}
-CHAR_TO_MULTIPLE = {'c', 'C', 'e', 'E'}
-BINARY_FIELDS = {"Data", "Data0", "Data1"}
-
+from config import (
+    START_SYNC_MARKER,
+    FMT_MSG_TYPE,
+    FMT_LENGTH,
+    AP_TO_STRUCT,
+    CHAR_TO_MULTIPLE,
+    BINARY_FIELDS,
+)
 
 def _decode_str(b: bytes) -> str:
     """Fast ASCII decode + strip NULs."""
@@ -31,7 +21,7 @@ def _decode_str(b: bytes) -> str:
 # ----------------------------------------------------------------------
 # Synchronous Parser – no threads, no processes
 # ----------------------------------------------------------------------
-class Parser:
+class ParserSync:
     def __init__(self, path: str):
         self.path = os.path.abspath(path)
         self.file_size = os.path.getsize(self.path)
