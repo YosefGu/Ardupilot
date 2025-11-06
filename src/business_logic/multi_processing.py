@@ -1,28 +1,30 @@
-import os
 import mmap
+import os
 import struct
 from concurrent.futures import ProcessPoolExecutor
-from typing import Dict, List, Tuple, Iterator, Any
-
+from typing import Any, Dict, Iterator, List, Tuple
 
 from config import (
-    START_SYNC_MARKER, 
-    FMT_MSG_TYPE,
-    FMT_LENGTH,
-    AP_TO_STRUCT,   
+    AP_TO_STRUCT,
     BINARY_FIELDS,
     BLOCK_SIZE,
+    FMT_LENGTH,
+    FMT_MSG_TYPE,
+    MAX_WORKERS,
     NUMBERS_TO_DIVIDE,
-    MAX_WORKERS
+    START_SYNC_MARKER,
 )
+
 
 def _decode_str(b: bytes) -> str:
     """Fast ASCII decode + strip NULs."""
-    return b.decode('ascii', errors='ignore').rstrip('\x00')
+    return b.decode("ascii", errors="ignore").rstrip("\x00")
+
 
 def _ap_fmt_to_struct(fmt_chars: List[str]) -> str:
     """Convert list of format chars → struct format string."""
-    return '<' + ''.join(AP_TO_STRUCT.get(c, '') for c in fmt_chars)
+    return "<" + "".join(AP_TO_STRUCT.get(c, "") for c in fmt_chars)
+
 
 def _process_block(
     path: str,
@@ -49,8 +51,7 @@ def _process_block(
             "format_chars": info["format_chars"],
         }
 
-    with open(path, "rb") as f, mmap.mmap(
-        f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
+    with open(path, "rb") as f, mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
         pos = start
         while pos < end:
             pos = mm.find(START_SYNC_MARKER, pos)
@@ -84,6 +85,7 @@ def _process_block(
 
     return messages
 
+
 def _apply_scaling_and_decode(msg: dict, fmt: dict) -> dict:
     """Decode bytes and apply scaling factors."""
     for col, val in msg.items():
@@ -97,7 +99,7 @@ def _apply_scaling_and_decode(msg: dict, fmt: dict) -> dict:
         fmt_char = fmt["format_chars"][i]
         if fmt_char in NUMBERS_TO_DIVIDE:
             msg[col] = val / 100.0
-        elif fmt_char == 'L':
+        elif fmt_char == "L":
             msg[col] = val / 1e7
     return msg
 
@@ -137,12 +139,12 @@ class ParserMultiprocessing:
         with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
             futures = [
                 executor.submit(
-                    _process_block, 
-                    self.path, 
-                    start, 
-                    end, 
-                    fmt_cache_raw, 
-                    wanted_type
+                    _process_block,
+                    self.path,
+                    start,
+                    end,
+                    fmt_cache_raw,
+                    wanted_type,
                 )
                 for start, end in blocks
             ]
@@ -181,7 +183,7 @@ class ParserMultiprocessing:
                     "Length": length,
                     "name": name,
                     "struct_obj": struct_obj,
-                    "columns": cols_raw.split(','),
+                    "columns": cols_raw.split(","),
                     "format_chars": list(fmt_raw),
                 }
                 pos += FMT_LENGTH

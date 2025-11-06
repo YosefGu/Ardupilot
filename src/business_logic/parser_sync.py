@@ -1,20 +1,21 @@
+import mmap
 import os
 import struct
-import mmap
-from typing import Dict, Iterator, Any
+from typing import Any, Dict, Iterator
 
 from config import (
-    START_SYNC_MARKER,      
-    FMT_MSG_TYPE,
-    FMT_LENGTH,
     AP_TO_STRUCT,
-    CHAR_TO_MULTIPLE,
     BINARY_FIELDS,
+    CHAR_TO_MULTIPLE,
+    FMT_LENGTH,
+    FMT_MSG_TYPE,
+    START_SYNC_MARKER,
 )
+
 
 def _decode_str(b: bytes) -> str:
     """Fast ASCII decode + strip NULs."""
-    return b.decode('ascii', errors='ignore').rstrip('\x00')
+    return b.decode("ascii", errors="ignore").rstrip("\x00")
 
 
 class ParserSync:
@@ -27,7 +28,7 @@ class ParserSync:
         self._fmt_cache: Dict[int, Dict[str, Any]] = {}
         self._build_fmt_cache()
 
-    def __del__(self):
+    def __del__(self) -> None:
         try:
             self._mm.close()
             self._file.close()
@@ -71,14 +72,14 @@ class ParserSync:
             fmt_raw = _decode_str(fmt_b)
             cols_raw = _decode_str(cols_b)
 
-            struct_fmt = '<' + ''.join(AP_TO_STRUCT.get(c, '') for c in fmt_raw)
+            struct_fmt = "<" + "".join(AP_TO_STRUCT.get(c, "") for c in fmt_raw)
             struct_obj = struct.Struct(struct_fmt)
 
             self._fmt_cache[typ] = {
                 "Length": length,
                 "name": name,
                 "struct_obj": struct_obj,
-                "columns": cols_raw.split(','),
+                "columns": cols_raw.split(","),
                 "format_chars": list(fmt_raw),
             }
             pos += FMT_LENGTH
@@ -133,7 +134,7 @@ class ParserSync:
                 fmt_char = fmt["format_chars"][i]
                 if fmt_char in CHAR_TO_MULTIPLE:
                     msg[col] = val / 100.0
-                elif fmt_char == 'L':
+                elif fmt_char == "L":
                     msg[col] = val / 1e7
 
             msg["mavpackettype"] = fmt["name"]
