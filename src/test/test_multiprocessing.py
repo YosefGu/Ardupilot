@@ -56,10 +56,10 @@ def test_decode_str(subtests: Any) -> None:
 
 
 def test_apply_scaling_and_decode(subtests: Any) -> None:
-    from config import BINARY_FIELDS, NUMBERS_TO_DIVIDE
+    from config import BINARY_FIELDS, CHAR_TO_DIVIDE
 
     with subtests.test("Confirm NUMBERS_TO_DIVIDE is defined"):
-        assert NUMBERS_TO_DIVIDE, "NUMBERS_TO_DIVIDE is empty!"
+        assert CHAR_TO_DIVIDE, "NUMBERS_TO_DIVIDE is empty!"
 
     with subtests.test("Confirm BINARY_FIELDS is defined"):
         assert BINARY_FIELDS, "BINARY_FIELDS is empty!"

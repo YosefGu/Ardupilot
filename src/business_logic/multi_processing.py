@@ -11,7 +11,7 @@ from config import (
     FMT_LENGTH,
     FMT_MSG_TYPE,
     MAX_WORKERS,
-    NUMBERS_TO_DIVIDE,
+    CHAR_TO_DIVIDE,
     START_SYNC_MARKER,
 )
 
@@ -97,10 +97,10 @@ def _apply_scaling_and_decode(msg: dict, fmt: dict) -> dict:
         if not isinstance(val, (int, float)):
             continue
         fmt_char = fmt["format_chars"][i]
-        if fmt_char in NUMBERS_TO_DIVIDE:
-            msg[col] = val / 100.0
-        elif fmt_char == "L":
+        if fmt_char == "L":
             msg[col] = val / 1e7
+        elif fmt_char in CHAR_TO_DIVIDE:
+            msg[col] = val / 100.0
     return msg
 
 

@@ -8,11 +8,11 @@ from config import (
     AP_TO_STRUCT,
     BINARY_FIELDS,
     BLOCK_SIZE,
-    CHAR_TO_MULTIPLE,
     FMT_LENGTH,
     FMT_MSG_TYPE,
     MAX_WORKERS,
     START_SYNC_MARKER,
+    CHAR_TO_DIVIDE,
 )
 
 
@@ -76,7 +76,7 @@ def _process_block(
                 if not isinstance(val, (int, float)):
                     continue
                 fmt_char = info["format_chars"][i]
-                if fmt_char in CHAR_TO_MULTIPLE:
+                if fmt_char in CHAR_TO_DIVIDE:
                     msg[col] = val / 100.0
                 elif fmt_char == "L":
                     msg[col] = val / 1e7
