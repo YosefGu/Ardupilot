@@ -1,11 +1,10 @@
-# parser_sync.py
 import os
 import struct
 import mmap
-from typing import Dict, List, Iterator, Any
+from typing import Dict, Iterator, Any
 
 from config import (
-    START_SYNC_MARKER,
+    START_SYNC_MARKER,      
     FMT_MSG_TYPE,
     FMT_LENGTH,
     AP_TO_STRUCT,
@@ -18,15 +17,10 @@ def _decode_str(b: bytes) -> str:
     return b.decode('ascii', errors='ignore').rstrip('\x00')
 
 
-# ----------------------------------------------------------------------
-# Synchronous Parser – no threads, no processes
-# ----------------------------------------------------------------------
 class ParserSync:
     def __init__(self, path: str):
         self.path = os.path.abspath(path)
         self.file_size = os.path.getsize(self.path)
-
-        # One mmap for the whole lifetime
         self._file = open(self.path, "rb")
         self._mm = mmap.mmap(self._file.fileno(), 0, access=mmap.ACCESS_READ)
 
@@ -40,9 +34,6 @@ class ParserSync:
         except Exception:
             pass
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
     def recv_match(self, msg_name: str | None = None) -> Iterator[Dict[str, Any]]:
         """
         Yield messages in file order.
@@ -57,9 +48,6 @@ class ParserSync:
 
         yield from self._parse_all(wanted_type)
 
-    # ------------------------------------------------------------------
-    # Build FMT cache (once at init)
-    # ------------------------------------------------------------------
     def _build_fmt_cache(self) -> None:
         marker = START_SYNC_MARKER + bytes([FMT_MSG_TYPE])
         fmt_struct = struct.Struct("<BB4s16s64s")
@@ -105,9 +93,6 @@ class ParserSync:
                 "format_chars": [],
             }
 
-    # ------------------------------------------------------------------
-    # Main parsing loop – fully synchronous, very fast
-    # ------------------------------------------------------------------
     def _parse_all(self, wanted_type: int | None) -> Iterator[Dict[str, Any]]:
         pos = 0
         end = self.file_size

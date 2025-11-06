@@ -38,10 +38,11 @@ AP_TO_STRUCT: Dict[str, str] = {
 # Scaling & special handling
 # ----------------------------------------------------------------------
 CHAR_TO_MULTIPLE: Set[str] = {'c', 'C', 'e', 'E'}   # divide by 100
+NUMBERS_TO_DIVIDE: Set[str] = {'c', 'C', 'e', 'E'}               # divide by 1e7 for lat/lon
 BINARY_FIELDS: Set[str] = {"Data", "Data0", "Data1"}   # keep raw bytes
 
 # ----------------------------------------------------------------------
 # Default parser behaviour
 # ----------------------------------------------------------------------
-DEFAULT_BLOCK_SIZE = 15 * 1024 * 1024   # 15 MiB
-DEFAULT_MAX_WORKERS = 6                # for threaded version
+BLOCK_SIZE = 15 * 1024 * 1024   # 15 MiB
+MAX_WORKERS = 6                # for threaded version
