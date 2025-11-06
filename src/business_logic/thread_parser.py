@@ -1,28 +1,19 @@
-# multy_threading.py
 import os
 import mmap
 import struct
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Tuple, Iterator, Any
 
-# ----------------------------------------------------------------------
-# Constants
-# ----------------------------------------------------------------------
-START_SYNC_MARKER = b'\xA3\x95'
-FMT_MSG_TYPE = 128
-FMT_LENGTH = 89
-DEFAULT_BLOCK_SIZE = 10 * 1024 * 1024   # 10 MiB – tune if you like
-
-AP_TO_STRUCT = {
-    'a': '32h', 'b': 'b', 'B': 'B', 'h': 'h', 'H': 'H',
-    'i': 'i', 'I': 'I', 'f': 'f', 'd': 'd',
-    'n': '4s', 'N': '16s', 'Z': '64s',
-    'c': 'h', 'C': 'H', 'e': 'i', 'E': 'I',
-    'L': 'i', 'M': 'B', 'q': 'q', 'Q': 'Q',
-}
-CHAR_TO_MULTIPLE = {'c', 'C', 'e', 'E'}
-BINARY_FIELDS = {"Data", "Data0", "Data1"}
-
+from config import (
+    START_SYNC_MARKER,
+    FMT_MSG_TYPE,
+    FMT_LENGTH,
+    AP_TO_STRUCT,
+    CHAR_TO_MULTIPLE,
+    BINARY_FIELDS,
+    BLOCK_SIZE,
+    MAX_WORKERS
+)
 
 def _decode_str(b: bytes) -> str:
     """Fast ASCII decode + strip NUL bytes."""
@@ -33,10 +24,6 @@ def _ap_fmt_to_struct(fmt_chars: str) -> str:
     """Convert ArduPilot format string → struct format string."""
     return '<' + ''.join(AP_TO_STRUCT.get(c, '') for c in fmt_chars)
 
-
-# ----------------------------------------------------------------------
-# Thread worker – runs inside the ThreadPoolExecutor
-# ----------------------------------------------------------------------
 def _process_block(
     path: str,
     start: int,
@@ -102,21 +89,15 @@ def _process_block(
 
     return messages
 
-
-# ----------------------------------------------------------------------
-# Public class – ThreadPool version
-# ----------------------------------------------------------------------
 class ParserThreadPool:
-    def __init__(self, path: str, block_size: int = DEFAULT_BLOCK_SIZE, max_workers: int = 6):
+    def __init__(self, path: str, block_size: int = BLOCK_SIZE, max_workers: int = MAX_WORKERS):
         self.path = os.path.abspath(path)
         self.block_size = block_size
         self.max_workers = max_workers
         self._fmt_cache: Dict[int, Dict[str, Any]] = {}
-        self._build_fmt_cache()                     # fills self._fmt_cache
+        self._build_fmt_cache()                  
 
-    # ------------------------------------------------------------------
-    # Public generator
-    # ------------------------------------------------------------------
+
     def recv_match(self, msg_name: str | None = None) -> Iterator[Dict[str, Any]]:
         """
         Yield messages in *file order*.
@@ -153,14 +134,12 @@ class ParserThreadPool:
                     end,
                     fmt_cache_raw,
                     wanted_type,
-                ): idx
-                for idx, (start, end) in enumerate(blocks, start=1)
+                ): idx for idx, (start, end) in enumerate(blocks, start=1)
             }
 
             waiting: Dict[int, List[Dict[str, Any]]] = {}
             expected_idx = 1
             finished = 0
-            total = len(blocks)
 
             for future in as_completed(future_to_idx):
                 idx = future_to_idx[future]
@@ -173,14 +152,12 @@ class ParserThreadPool:
                     expected_idx += 1
                     finished += 1
 
-    # ------------------------------------------------------------------
-    # Build FMT cache (once at init)
-    # ------------------------------------------------------------------
     def _build_fmt_cache(self) -> None:
-        marker = START_SYNC_MARKER + bytes([FMT_MSG_TYPE])   # b'\xA3\x95\x80'
+        marker = START_SYNC_MARKER + bytes([FMT_MSG_TYPE]) 
         fmt_struct = struct.Struct("<BB4s16s64s")
 
-        with open(self.path, "rb") as f, mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
+        with open(self.path, "rb") as f, mmap.mmap(
+            f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
             pos = 0
             while True:
                 pos = mm.find(marker, pos)
@@ -221,15 +198,13 @@ class ParserThreadPool:
                 "format_chars": [],
             }
 
-    # ------------------------------------------------------------------
-    # Split file into safe blocks (ends on a sync marker)
-    # ------------------------------------------------------------------
     def _make_blocks(self) -> List[Tuple[int, int]]:
         file_size = os.path.getsize(self.path)
         blocks: List[Tuple[int, int]] = []
         start = 0
 
-        with open(self.path, "rb") as f, mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
+        with open(self.path, "rb") as f, mmap.mmap(
+            f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
             while start < file_size:
                 end = min(start + self.block_size, file_size)
                 nxt = mm.find(START_SYNC_MARKER, end)
