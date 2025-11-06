@@ -1,16 +1,11 @@
-from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, Set
 
-# ----------------------------------------------------------------------
 # File / parsing settings
-# ----------------------------------------------------------------------
 START_SYNC_MARKER = b"\xa3\x95"  # 2-byte header
 FMT_MSG_TYPE = 128  # Message type of FMT records
 FMT_LENGTH = 89  # Fixed size of a FMT message
 
-# ----------------------------------------------------------------------
 # ArduPilot → struct format mapping
-# ----------------------------------------------------------------------
 AP_TO_STRUCT: Dict[str, str] = {
     "a": "32h",  # int16_t[16]
     "b": "b",  # int8_t
@@ -34,15 +29,10 @@ AP_TO_STRUCT: Dict[str, str] = {
     "Q": "Q",  # uint64_t
 }
 
-# ----------------------------------------------------------------------
 # Scaling & special handling
-# ----------------------------------------------------------------------
-CHAR_TO_MULTIPLE: Set[str] = {"c", "C", "e", "E"}  # divide by 100
-NUMBERS_TO_DIVIDE: Set[str] = {"c", "C", "e", "E"}  # divide by 1e7 for lat/lon
+CHAR_TO_DIVIDE: Set[str] = {"c", "C", "e", "E"}  # divide by 100
 BINARY_FIELDS: Set[str] = {"Data", "Data0", "Data1"}  # keep raw bytes
 
-# ----------------------------------------------------------------------
 # Default parser behaviour
-# ----------------------------------------------------------------------
 BLOCK_SIZE = 10 * 1024 * 1024  # 15 MiB
 MAX_WORKERS = 8  # for threaded version

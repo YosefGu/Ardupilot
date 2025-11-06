@@ -6,10 +6,10 @@ from typing import Any, Dict, Iterator
 from config import (
     AP_TO_STRUCT,
     BINARY_FIELDS,
-    CHAR_TO_MULTIPLE,
     FMT_LENGTH,
     FMT_MSG_TYPE,
     START_SYNC_MARKER,
+    CHAR_TO_DIVIDE,
 )
 
 
@@ -132,7 +132,7 @@ class ParserSync:
                 if not isinstance(val, (int, float)):
                     continue
                 fmt_char = fmt["format_chars"][i]
-                if fmt_char in CHAR_TO_MULTIPLE:
+                if fmt_char in CHAR_TO_DIVIDE:
                     msg[col] = val / 100.0
                 elif fmt_char == "L":
                     msg[col] = val / 1e7
