@@ -9,8 +9,8 @@ if __name__ == "__main__":
     # Example usage:    
     verify_tests_class.verify_count_messages('GPS')
     verify_tests_class.verify_message_consistency('GPS')
-    runtime_tests_class.mavlink_runtime()
-    runtime_tests_class.parsor_runtime()
-    runtime_tests_class.threads_runtime()
-    runtime_tests_class.multiprocessing_runtime()
+    # runtime_tests_class.mavlink_runtime('GPS')
+    # runtime_tests_class.parsor_runtime('GPS')
+    # runtime_tests_class.threads_runtime('GPS')
+    # runtime_tests_class.multiprocessing_runtime('GPS')
     

@@ -1,7 +1,7 @@
 import os
 import mmap
 import struct
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Tuple, Iterator, Any
 
 from config import (
@@ -18,7 +18,6 @@ from config import (
 def _decode_str(b: bytes) -> str:
     """Fast ASCII decode + strip NUL bytes."""
     return b.decode('ascii', errors='ignore').rstrip('\x00')
-
 
 def _ap_fmt_to_struct(fmt_chars: str) -> str:
     """Convert ArduPilot format string → struct format string."""
@@ -125,32 +124,12 @@ class ParserThreadPool:
         }
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            # Submit all blocks – keep mapping future → block index
-            future_to_idx = {
-                executor.submit(
-                    _process_block,
-                    self.path,
-                    start,
-                    end,
-                    fmt_cache_raw,
-                    wanted_type,
-                ): idx for idx, (start, end) in enumerate(blocks, start=1)
-            }
-
-            waiting: Dict[int, List[Dict[str, Any]]] = {}
-            expected_idx = 1
-            finished = 0
-
-            for future in as_completed(future_to_idx):
-                idx = future_to_idx[future]
-                waiting[idx] = future.result()
-
-                # Emit blocks as soon as they are the next expected one
-                while expected_idx in waiting:
-                    for msg in waiting.pop(expected_idx):
-                        yield msg
-                    expected_idx += 1
-                    finished += 1
+            futures = [
+            executor.submit(_process_block, self.path, start, end, fmt_cache_raw, wanted_type)
+            for start, end in blocks
+            ]
+            for future in futures:
+                yield from future.result()
 
     def _build_fmt_cache(self) -> None:
         marker = START_SYNC_MARKER + bytes([FMT_MSG_TYPE]) 

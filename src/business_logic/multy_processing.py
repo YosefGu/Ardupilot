@@ -1,9 +1,9 @@
 import os
 import mmap
 import struct
-from multiprocessing import Pool, cpu_count
+from concurrent.futures import ProcessPoolExecutor
 from typing import Dict, List, Tuple, Iterator, Any
-from functools import partial
+
 
 from config import (
     START_SYNC_MARKER, 
@@ -12,7 +12,8 @@ from config import (
     AP_TO_STRUCT,   
     BINARY_FIELDS,
     BLOCK_SIZE,
-    NUMBERS_TO_DIVIDE
+    NUMBERS_TO_DIVIDE,
+    MAX_WORKERS
 )
 
 def _decode_str(b: bytes) -> str:
@@ -105,6 +106,7 @@ class ParserMultiprocessing:
     def __init__(self, path: str):
         self.path = os.path.abspath(path)
         self._fmt_cache: Dict[int, Dict[str, Any]] = {}
+        self.max_workers = MAX_WORKERS
         self._build_fmt_cache()
 
     def recv_match(self, msg_name: str | None = None) -> Iterator[Dict[str, Any]]:
@@ -132,17 +134,21 @@ class ParserMultiprocessing:
             for typ, info in self._fmt_cache.items()
         }
 
-        with Pool(processes=cpu_count()) as pool:
+        with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
             futures = [
-                pool.apply_async(
-                    _process_block,
-                    args=(self.path, start, end, fmt_cache_raw, wanted_type)
+                executor.submit(
+                    _process_block, 
+                    self.path, 
+                    start, 
+                    end, 
+                    fmt_cache_raw, 
+                    wanted_type
                 )
                 for start, end in blocks
             ]
             # Collect results in order
             for future in futures:
-                yield from future.get()
+                yield from future.result()
 
     def _build_fmt_cache(self) -> None:
         marker = START_SYNC_MARKER + bytes([FMT_MSG_TYPE])  # b'\xA3\x95\x80'
